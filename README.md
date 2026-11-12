@@ -24,9 +24,33 @@ avec export CSV.
 
 Aucune dépendance externe : Python 3.8+ suffit.
 
+### Windows
+
+1. Installez Python depuis https://www.python.org/downloads/ (cochez
+   « Add Python to PATH » à l'installation) ou via le Microsoft Store.
+2. Ouvrez PowerShell dans un dossier classique (par exemple `Documents`),
+   **évitez** `C:\Windows\system32` qui nécessite des droits administrateur :
+
+```powershell
+cd $HOME\Documents
+git clone https://github.com/SateSama/KWIFI
+cd KWIFI
+py main.py
+```
+
+La commande `python3` n'existe pas sous Windows : utilisez `py` (ou `python`).
+Si Windows affiche « Python est introuvable », ouvrez
+Paramètres > Applications > Paramètres d'exécution des applications et
+désactivez les raccourcis d'installation de l'application Python, puis
+installez Python depuis python.org.
+
+### Linux / macOS
+
 ```bash
 python3 main.py
 ```
+
+Sous Linux, si Tkinter manque : `sudo apt install python3-tk`.
 
 ## Premier lancement
 
