@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from .formatting import format_bytes, format_rate
 from .monitor import Monitor
@@ -44,7 +44,9 @@ class App(tk.Tk):
             rates, text="↑ Montant : —", font=("", 16, "bold"), foreground="#b35900"
         )
         self.up_label.grid(row=0, column=1, sticky="w")
-        self.total_label = ttk.Label(rates, text="Depuis le démarrage du compteur : —", foreground="#555")
+        self.total_label = ttk.Label(
+            rates, text="Depuis le démarrage du compteur : —", foreground="#555"
+        )
         self.total_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 0))
 
         graph_frame = ttk.LabelFrame(main, text="Historique des débits", padding=8)
@@ -78,6 +80,7 @@ class App(tk.Tk):
         actions.pack(fill="x")
         ttk.Button(actions, text="Exporter l'historique (CSV)", command=self._export_csv).pack(side="left")
         ttk.Button(actions, text="Appairer la Freebox", command=self._pair_freebox).pack(side="left", padx=8)
+        ttk.Button(actions, text="Mot de passe box", command=self._ask_password).pack(side="left")
         self.status_label = ttk.Label(actions, text="Prêt.", foreground="#555")
         self.status_label.pack(side="right", padx=8)
 
@@ -104,8 +107,24 @@ class App(tk.Tk):
             self.status_label.config(
                 text="Appairage Freebox requis : cliquez sur « Appairer la Freebox »."
             )
+        elif kind == "credentials_required":
+            password = simpledialog.askstring(
+                "Mot de passe box",
+                "Mot de passe admin de la %s\n"
+                "(laisser vide pour le mode limité UPnP) :" % event.get("box", "box"),
+                show="*",
+            )
+            self.monitor.set_password(password or "")
         elif kind == "error":
             messagebox.showwarning("Surveillance Box", message)
+
+    @staticmethod
+    def _format_totals(bytes_down, bytes_up):
+        if bytes_down is None and bytes_up is None:
+            return "—"
+        down = format_bytes(bytes_down) if bytes_down is not None else "—"
+        up = format_bytes(bytes_up) if bytes_up is not None else "—"
+        return "↓ %s  •  ↑ %s" % (down, up)
 
     def _apply_snapshot(self, snapshot):
         self.box_label.config(
@@ -115,19 +134,17 @@ class App(tk.Tk):
         self.down_label.config(text="↓ Descendant : %s" % format_rate(snapshot["rate_down"]))
         self.up_label.config(text="↑ Montant : %s" % format_rate(snapshot["rate_up"]))
         self.total_label.config(
-            text="Depuis le démarrage du compteur : ↓ %s  •  ↑ %s"
-            % (
-                format_bytes(snapshot["bytes_down"]),
-                format_bytes(snapshot["bytes_up"]),
+            text="Depuis le démarrage du compteur : %s"
+            % self._format_totals(snapshot["bytes_down"], snapshot["bytes_up"])
+        )
+        if snapshot["bytes_down"] is not None:
+            self.storage.insert(
+                snapshot["source"],
+                snapshot["bytes_down"],
+                snapshot["bytes_up"],
+                snapshot["rate_down"],
+                snapshot["rate_up"],
             )
-        )
-        self.storage.insert(
-            snapshot["source"],
-            snapshot["bytes_down"],
-            snapshot["bytes_up"],
-            snapshot["rate_down"],
-            snapshot["rate_up"],
-        )
         self.samples.append((snapshot["rate_down"], snapshot["rate_up"]))
         if len(self.samples) > self.max_samples:
             self.samples = self.samples[-self.max_samples:]
@@ -234,6 +251,15 @@ class App(tk.Tk):
     def _pair_freebox(self):
         self.monitor.stop()
         self.monitor.pair_and_run()
+
+    def _ask_password(self):
+        password = simpledialog.askstring(
+            "Mot de passe box",
+            "Mot de passe admin de la box (Livebox, SFR, Bbox) :",
+            show="*",
+        )
+        if password:
+            self.monitor.set_password(password)
 
     def _on_close(self):
         self.monitor.stop()
