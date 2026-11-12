@@ -8,15 +8,28 @@ avec export CSV.
 
 ## Fonctionnalités
 
-- **Détection automatique** de la box sur le réseau local
+- **Détection automatique** de la box sur le réseau local, dans l'ordre :
+  Freebox → Livebox → SFR → Bbox → UPnP générique (n'importe quelle autre box)
 - **Freebox** (API officielle Freebox OS) :
   - débits instantanés descendant / montant
   - volumes totaux depuis le démarrage de la connexion
   - liste des appareils connectés (nom, IP, MAC, état)
   - températures, ventilateur, uptime
   - appairage guidé au premier lancement (validation sur l'écran de la Freebox)
-- **Livebox (Orange), Box SFR, box génériques** : via UPnP IGD
+- **Livebox (Orange) 3, 4, 5, 6, 7** (API sysbus) :
+  - état de la connexion WAN, IP publique
+  - compteurs total envoyé / reçu quand le firmware les expose
+  - liste des appareils connectés et températures (mot de passe admin requis,
+    par défaut les 8 premiers caractères de la clé Wi-Fi)
+- **Box SFR / Red (Box 8, 10+...)** (API REST locale) :
+  - état WAN, IP publique, uptime, température
+  - liste des appareils connectés (mot de passe admin requis)
+- **Bbox (Bouygues) Miami, Ultym, Must, Wi-Fi 6/7** (API REST locale) :
+  - compteurs total envoyé / reçu, IP publique, appareils connectés
+- **Toutes les autres box** (UPnP IGD) :
   - compteurs total envoyé / reçu, IP publique, débits calculés
+- Quand une box ne fournit pas ses compteurs natifs, l'application les
+  récupère automatiquement en UPnP en complément
 - **Graphique** de l'historique des débits en direct
 - **Historique** stocké dans une base SQLite locale, exportable en CSV
 
@@ -34,9 +47,17 @@ python3 main.py
   « Appairer la Freebox », puis **appuyez sur la flèche droite** de la Freebox
   pour accepter la demande. Le jeton est ensuite mémorisé dans
   `~/.config/surveillance-box/freebox_token.json`.
-- **Livebox / SFR / autre** : la détection UPnP se charge de tout, à condition
-  que l'UPnP soit activé dans la box (c'est le cas par défaut sur la plupart
-  des modèles).
+- **Livebox** : un mot de passe admin est demandé (par défaut : les 8 premiers
+  caractères de la clé Wi-Fi). Sans mot de passe, l'application bascule en
+  mode UPnP (volumes et débits, sans liste des appareils).
+- **Box SFR / Red** : un mot de passe admin est demandé (par défaut : la clé
+  Wi-Fi figurant sur l'étiquette de la box). Sans mot de passe : mode UPnP.
+- **Bbox** : la plupart des informations sont accessibles sans mot de passe ;
+  si la box le demande, utilisez le bouton « Mot de passe box ».
+- **Autre box / routeur** : détection UPnP automatique, à condition que l'UPnP
+  soit activé dans la box (c'est le cas par défaut sur la plupart des modèles).
+  Le bouton « Mot de passe box » permet aussi de ressaisir un mot de passe
+  sans redémarrer l'application.
 
 ## Données enregistrées
 
@@ -48,8 +69,11 @@ mesure : horodatage, source, octets reçus, octets envoyés, débits.
 ```
 main.py                     point d'entrée
 box_monitor/freebox.py      client API Freebox OS (appairage + session)
+box_monitor/livebox.py      client API sysbus Livebox (Orange)
+box_monitor/sfr.py          client API REST Box SFR / Red
+box_monitor/bbox.py         client API REST Bbox (Bouygues)
 box_monitor/upnp.py         client UPnP IGD générique (SSDP + SOAP)
 box_monitor/storage.py      historique SQLite + export CSV
-box_monitor/monitor.py      boucle de surveillance (thread)
+box_monitor/monitor.py      boucle de surveillance + chaîne de détection (thread)
 box_monitor/gui.py          interface graphique Tkinter
 ```
