@@ -1,0 +1,46 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "main.py"
+      - "box_monitor/**"
+      - ".github/workflows/build-exe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build executable
+        run: pyinstaller --onefile --windowed --name SurveillanceBox main.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SurveillanceBox-windows
+          path: dist/SurveillanceBox.exe
+
+      - name: Publish to release "latest"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create latest --repo "$GITHUB_REPOSITORY" \
+                 --title "SurveillanceBox (Windows)" \
+                 --notes "Exécutable Windows autonome : téléchargez SurveillanceBox.exe et double-cliquez. Aucune installation de Python nécessaire."
+          gh release upload latest dist/SurveillanceBox.exe --repo "$GITHUB_REPOSITORY" --clobber

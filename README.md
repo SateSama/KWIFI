@@ -6,6 +6,22 @@ débits descendant et montant en temps réel, volumes cumulés, appareils
 connectés (Freebox), températures, et historique complet enregistré en SQLite
 avec export CSV.
 
+## 📥 Télécharger le .exe (Windows, sans installer Python)
+
+Un exécutable Windows autonome est compilé automatiquement par GitHub Actions
+à chaque mise à jour du code :
+
+1. Ouvrez la page [Releases du dépôt](https://github.com/SateSama/KWIFI/releases)
+2. Téléchargez **SurveillanceBox.exe** (release « latest »)
+3. Double-cliquez dessus. C'est tout.
+
+> Windows Defender/SmartScreen peut afficher un avertissement (« éditeur
+> inconnu ») car l'exécutable n'est pas signé : cliquez sur
+> « Informations complémentaires » puis « Exécuter quand même ».
+
+Pour recompiler manuellement : `pip install pyinstaller` puis
+`pyinstaller --onefile --windowed --name SurveillanceBox main.py`.
+
 ## Fonctionnalités
 
 - **Détection automatique** de la box sur le réseau local, dans l'ordre :
